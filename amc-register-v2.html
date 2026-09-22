@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>AMC Register — Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAF8F3; --paper-line:#E4DECF;
+    --ink:#1C1B18; --ink-soft:#615C4F;
+    --rule:#8C1F28;           /* the ledger red rule, from the physical bill */
+    --rule-soft:#8C1F2822;
+    --accent:#C9A227;         /* brass/gold — invoice-stamp accent */
+    --panel:#FFFFFF;
+    --overdue:#8C1F28; --overdue-bg:#FBEAEA;
+    --duesoon:#9C6B0A; --duesoon-bg:#FBF1DC;
+    --ok:#2F6B3F; --ok-bg:#EAF3EA;
+    --sidebar:#1C1B18; --sidebar-text:#D8D4C7; --sidebar-active:#2A2924;
+    --radius:3px;
+    --serif: 'Source Serif 4', Georgia, serif;
+    --sans: 'IBM Plex Sans', Arial, sans-serif;
+    --mono: 'IBM Plex Mono', 'Courier New', monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#171613; --paper-line:#333026;
+      --ink:#EFEBDF; --ink-soft:#A39C88;
+      --panel:#201F1B;
+      --overdue-bg:#3A2020; --duesoon-bg:#3A3120; --ok-bg:#20301F;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#171613; --paper-line:#333026;
+    --ink:#EFEBDF; --ink-soft:#A39C88;
+    --panel:#201F1B;
+    --overdue-bg:#3A2020; --duesoon-bg:#3A3120; --ok-bg:#20301F;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-padding-top:env(safe-area-inset-top,0px);}
+  body{
+    margin:0; font-family:var(--sans); background:var(--paper); color:var(--ink);
+    padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+    font-size:14px; -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;}
+
+  .shell{ display:flex; min-height:100vh; }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{
+    width:220px; flex-shrink:0; background:var(--sidebar); color:var(--sidebar-text);
+    padding:22px 14px; position:sticky; top:0; align-self:flex-start; height:100vh; overflow-y:auto;
+  }
+  .brand{ font-family:var(--serif); font-size:19px; color:#fff; padding:0 10px 22px 10px; letter-spacing:.01em; border-bottom:1px solid #ffffff22; margin-bottom:16px;}
+  .brand small{display:block; font-family:var(--sans); font-size:11px; color:var(--sidebar-text); font-weight:500; margin-top:2px;}
+  .navgroup{ margin-bottom:18px; }
+  .navgroup .navlabel{ font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:#8b8672; padding:0 10px; margin-bottom:6px; }
+  .navlink{
+    display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:var(--radius);
+    text-decoration:none; color:var(--sidebar-text); font-size:13.5px; font-weight:500; cursor:pointer;
+  }
+  .navlink:hover{ background:#ffffff10; }
+  .navlink.active{ background:var(--sidebar-active); color:#fff; box-shadow:inset 2px 0 0 var(--accent); }
+  .navlink .ic{ width:16px; text-align:center; opacity:.85; }
+
+  /* ---------- Main ---------- */
+  main{ flex:1; min-width:0; }
+  .topbar{
+    display:flex; align-items:center; gap:14px; padding:14px 28px; background:var(--panel);
+    border-bottom:1px solid var(--paper-line); position:sticky; top:0; z-index:5; flex-wrap:wrap;
+  }
+  .fy-select{
+    font-family:var(--mono); font-size:12.5px; border:1px solid var(--paper-line); background:var(--paper);
+    color:var(--ink); padding:6px 10px; border-radius:var(--radius);
+  }
+  .search{ flex:1; max-width:320px; }
+  .search input{ width:100%; padding:7px 12px; border:1px solid var(--paper-line); border-radius:var(--radius); background:var(--paper); color:var(--ink); font-size:13px; }
+  .topbar .who{ margin-left:auto; font-size:12.5px; color:var(--ink-soft); display:flex; align-items:center; gap:8px; }
+  .avatar{ width:26px; height:26px; border-radius:50%; background:var(--rule); color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600; }
+
+  .content{ padding:26px 28px 60px 28px; max-width:1180px; }
+  section{ display:none; }
+  section.visible{ display:block; }
+
+  h1{ font-family:var(--serif); font-weight:600; font-size:24px; margin:0 0 4px 0; }
+  .subnote{ color:var(--ink-soft); font-size:13px; margin-bottom:22px; max-width:70ch; }
+
+  .mock-banner{
+    background:var(--duesoon-bg); border:1px solid #d8b45a55; color:var(--duesoon);
+    font-size:12.5px; padding:9px 14px; border-radius:var(--radius); margin-bottom:20px;
+  }
+
+  /* ---------- KPI row ---------- */
+  .kpis{ display:flex; gap:1px; background:var(--paper-line); border:1px solid var(--paper-line); border-radius:var(--radius); overflow:hidden; margin-bottom:24px; flex-wrap:wrap; }
+  .kpi{ flex:1; min-width:150px; background:var(--panel); padding:14px 18px; }
+  .kpi .num{ font-family:var(--mono); font-size:22px; font-weight:500; }
+  .kpi .lbl{ font-size:11.5px; color:var(--ink-soft); margin-top:2px; }
+  .kpi.flag-overdue .num{ color:var(--overdue); }
+  .kpi.flag-duesoon .num{ color:var(--duesoon); }
+
+  /* ---------- Ledger table ---------- */
+  .ledger{ border:1px solid var(--paper-line); border-radius:var(--radius); overflow:hidden; background:var(--panel); }
+  table{ width:100%; border-collapse:collapse; }
+  th{
+    text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft);
+    font-weight:600; padding:10px 14px; border-bottom:2px solid var(--rule); background:var(--panel);
+  }
+  td{ padding:10px 14px; border-bottom:1px solid var(--paper-line); font-size:13.5px; vertical-align:middle; }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody tr:hover td{ background:var(--rule-soft); }
+  .num-cell{ font-family:var(--mono); }
+  .tenant-name{ font-weight:600; }
+  .row-actions{ display:flex; gap:6px; }
+  .icon-btn{
+    border:1px solid var(--paper-line); background:var(--panel); border-radius:var(--radius); width:26px; height:26px;
+    display:inline-flex; align-items:center; justify-content:center; cursor:pointer; font-size:13px; color:var(--ink-soft);
+  }
+  .icon-btn:hover{ border-color:var(--rule); color:var(--rule); }
+
+  .badge{ font-size:10.5px; font-weight:600; padding:3px 9px; border-radius:20px; letter-spacing:.02em; display:inline-block;}
+  .badge.OVERDUE{ background:var(--overdue-bg); color:var(--overdue); }
+  .badge.DUE-SOON{ background:var(--duesoon-bg); color:var(--duesoon); }
+  .badge.OK{ background:var(--ok-bg); color:var(--ok); }
+
+  .section-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
+  .btn{
+    font-family:var(--sans); font-weight:600; font-size:13px; padding:8px 16px; border-radius:var(--radius);
+    border:1px solid var(--ink); background:var(--ink); color:var(--paper); cursor:pointer;
+  }
+  .btn:hover{ background:var(--rule); border-color:var(--rule); }
+  .btn.ghost{ background:transparent; color:var(--ink); border:1px solid var(--paper-line); }
+  .btn.ghost:hover{ border-color:var(--ink); background:transparent; color:var(--ink); }
+  .btn.small{ padding:5px 11px; font-size:12px; }
+
+  /* ---------- Cards (documents) ---------- */
+  .doc-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:14px; }
+  .doc-card{ border:1px solid var(--paper-line); border-radius:var(--radius); background:var(--panel); padding:14px; }
+  .doc-thumb{
+    height:120px; border:1px dashed var(--paper-line); border-radius:2px; margin-bottom:10px;
+    background:repeating-linear-gradient(-45deg, var(--paper) 0 8px, var(--paper-line)33 8px 9px);
+    display:flex; align-items:center; justify-content:center; color:var(--ink-soft); font-size:22px;
+  }
+  .doc-name{ font-weight:600; font-size:13px; margin-bottom:2px; }
+  .doc-meta{ font-size:11.5px; color:var(--ink-soft); }
+  .dropzone{
+    border:1.5px dashed var(--paper-line); border-radius:var(--radius); padding:26px; text-align:center;
+    color:var(--ink-soft); font-size:13px; margin-bottom:20px; background:var(--panel);
+  }
+  .dropzone strong{ color:var(--ink); }
+
+  /* ---------- Modal ---------- */
+  .overlay{
+    position:fixed; inset:0; background:#00000055; display:none; align-items:flex-start; justify-content:center;
+    padding-top:8vh; z-index:20;
+  }
+  .overlay.open{ display:flex; }
+  .modal{ background:var(--panel); border-radius:var(--radius); width:440px; max-width:92vw; padding:22px; border:1px solid var(--paper-line); }
+  .modal h2{ font-family:var(--serif); font-size:18px; margin:0 0 4px 0; }
+  .modal .subnote{ margin-bottom:16px; }
+  .modal label{ display:block; font-size:12px; font-weight:600; color:var(--ink-soft); margin-top:12px; }
+  .modal input, .modal textarea, .modal select{
+    width:100%; padding:8px 10px; margin-top:5px; border:1px solid var(--paper-line); border-radius:var(--radius);
+    background:var(--paper); color:var(--ink); font-family:inherit; font-size:13.5px;
+  }
+  .modal .row2{ display:flex; gap:10px; }
+  .modal .row2 > div{ flex:1; }
+  .audit{ margin-top:16px; border-top:1px solid var(--paper-line); padding-top:12px; }
+  .audit .audit-title{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-bottom:8px; }
+  .audit-item{ font-size:12.5px; padding:7px 0; border-bottom:1px dotted var(--paper-line); }
+  .audit-item:last-child{ border-bottom:none; }
+  .audit-item .who{ color:var(--ink-soft); }
+  .audit-item .change{ font-family:var(--mono); }
+  .modal-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:20px; }
+  .close-x{ position:absolute; top:16px; right:18px; cursor:pointer; color:var(--ink-soft); font-size:16px; }
+  .modal{ position:relative; }
+
+  .fy-tag{ font-family:var(--mono); font-size:11px; color:var(--ink-soft); }
+
+  @media (max-width: 820px){
+    .sidebar{ position:fixed; left:-220px; transition:left .2s; z-index:30; }
+    .sidebar.open{ left:0; }
+    .content{ padding:20px 16px 60px 16px; }
+    .topbar{ padding:12px 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">AMC Register<small>Danfe Solutions — internal</small></div>
+
+    <div class="navgroup">
+      <div class="navlabel">Overview</div>
+      <a class="navlink active" data-target="dashboard"><span class="ic">▤</span> Dashboard</a>
+    </div>
+    <div class="navgroup">
+      <div class="navlabel">Records</div>
+      <a class="navlink" data-target="contracts"><span class="ic">▥</span> Contracts</a>
+      <a class="navlink" data-target="payments"><span class="ic">₨</span> Payments</a>
+      <a class="navlink" data-target="grace"><span class="ic">⏱</span> Grace Periods</a>
+      <a class="navlink" data-target="documents"><span class="ic">▦</span> Documents</a>
+    </div>
+    <div class="navgroup">
+      <div class="navlabel">Oversight</div>
+      <a class="navlink" data-target="audit"><span class="ic">◷</span> Correction Log</a>
+      <a class="navlink" data-target="admin"><span class="ic">⚙</span> Admin / Raw Data</a>
+    </div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <select class="fy-select">
+        <option>Fiscal Year: 2082/83</option>
+        <option>Fiscal Year: 2081/82</option>
+        <option>Fiscal Year: All</option>
+      </select>
+      <div class="search"><input type="text" placeholder="Search tenant, invoice no., VAT no…" /></div>
+      <div class="who"><span class="avatar">SU</span> Sujal (Finance)</div>
+    </div>
+
+    <div class="content">
+      <div class="mock-banner">Static preview — nav, edit and upload open real panels below but nothing is saved. This is to agree the look and the fields before I build it for real.</div>
+
+      <!-- DASHBOARD -->
+      <section id="dashboard" class="visible">
+        <h1>AMC & Billing Register</h1>
+        <div class="subnote">Fiscal Year 2082/83 · pulled from Contracts, Payments and the Correction Log.</div>
+
+        <div class="kpis">
+          <div class="kpi flag-overdue"><div class="num">9</div><div class="lbl">Overdue</div></div>
+          <div class="kpi flag-duesoon"><div class="num">1</div><div class="lbl">Due within 15 days</div></div>
+          <div class="kpi"><div class="num">4</div><div class="lbl">VAT bills pending</div></div>
+          <div class="kpi"><div class="num">₨ 1,84,000</div><div class="lbl">Received this FY</div></div>
+        </div>
+
+        <div class="section-head">
+          <div class="fy-tag">10 tenants · sorted by due date</div>
+          <button class="btn ghost small">Export register (.xlsx)</button>
+        </div>
+
+        <div class="ledger">
+        <table>
+          <thead><tr><th>Tenant</th><th>Code</th><th>AMC End</th><th>Days Left</th><th>Status</th><th>Grace Days</th><th></th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="tenant-name">New Urban Slice Pvt. Ltd.</td><td class="num-cell">NEWURBAN01</td>
+              <td class="num-cell">2026-09-11</td><td class="num-cell">-11</td>
+              <td><span class="badge OVERDUE">Overdue</span></td><td class="num-cell">7</td>
+              <td class="row-actions"><button class="icon-btn edit-date" title="Correct date">✎</button></td>
+            </tr>
+            <tr>
+              <td class="tenant-name">Northfield Cafe Pvt. Ltd.</td><td class="num-cell">NORTHFIELD01</td>
+              <td class="num-cell">2026-09-18</td><td class="num-cell">-4</td>
+              <td><span class="badge OVERDUE">Overdue</span></td><td class="num-cell">7</td>
+              <td class="row-actions"><button class="icon-btn edit-date" title="Correct date">✎</button></td>
+            </tr>
+            <tr>
+              <td class="tenant-name">Caviar Restaurant & Bar</td><td class="num-cell">CAVIAR01</td>
+              <td class="num-cell">2026-09-11</td><td class="num-cell">-11</td>
+              <td><span class="badge OVERDUE">Overdue</span></td><td class="num-cell">7</td>
+              <td class="row-actions"><button class="icon-btn edit-date" title="Correct date">✎</button></td>
+            </tr>
+            <tr>
+              <td class="tenant-name">MidCap Coffee And Bakery Pvt Ltd</td><td class="num-cell">MIDCAP01</td>
+              <td class="num-cell">2026-09-27</td><td class="num-cell">5</td>
+              <td><span class="badge DUE-SOON">Due soon</span></td><td class="num-cell">7</td>
+              <td class="row-actions"><button class="icon-btn edit-date" title="Correct date">✎</button></td>
+            </tr>
+            <tr>
+              <td class="tenant-name">Revive Leisure Park Pvt. Ltd.</td><td class="num-cell">REVIVE01</td>
+              <td class="num-cell">2026-10-20</td><td class="num-cell">28</td>
+              <td><span class="badge OK">OK</span></td><td class="num-cell">7</td>
+              <td class="row-actions"><button class="icon-btn edit-date" title="Correct date">✎</button></td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <!-- CONTRACTS -->
+      <section id="contracts">
+        <div class="section-head">
+          <div><h1>Contracts</h1><div class="subnote" style="margin-bottom:0;">One row per tenant — dates, amount, and the signed contract scan together.</div></div>
+          <button class="btn">+ New Contract</button>
+        </div>
+        <div class="ledger">
+        <table>
+          <thead><tr><th>Tenant</th><th>Registered</th><th>AMC Start</th><th>AMC End</th><th>Amount</th><th>Contract Scan</th><th></th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="tenant-name">Northfield Cafe Pvt. Ltd.</td>
+              <td class="num-cell">2023-01-15</td><td class="num-cell">2025-09-01</td><td class="num-cell">2026-09-18</td>
+              <td class="num-cell">₨ 15,000</td>
+              <td><a href="#" style="text-decoration:underline;">contract_northfield_2025.pdf</a></td>
+              <td class="row-actions">
+                <button class="icon-btn edit-date" title="Correct date">✎</button>
+                <button class="icon-btn" title="Delete">🗑</button>
+              </td>
+            </tr>
+            <tr>
+              <td class="tenant-name">Caviar Restaurant & Bar</td>
+              <td class="num-cell">—</td><td class="num-cell">2082.05.01 (B.S.)</td><td class="num-cell">2026-09-11</td>
+              <td class="num-cell">—</td>
+              <td><span style="color:var(--ink-soft);">Not uploaded</span></td>
+              <td class="row-actions">
+                <button class="icon-btn edit-date" title="Correct date">✎</button>
+                <button class="icon-btn" title="Delete">🗑</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <!-- PAYMENTS -->
+      <section id="payments">
+        <div class="section-head">
+          <div><h1>Payments</h1><div class="subnote" style="margin-bottom:0;">One row per payment received — never overwritten.</div></div>
+          <button class="btn">+ Record Payment</button>
+        </div>
+        <div class="ledger">
+        <table>
+          <thead><tr><th>Tenant</th><th>Date</th><th>FY</th><th>Amount</th><th>VAT Bill No.</th><th>VAT Status</th><th></th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="tenant-name">Northfield Cafe Pvt. Ltd.</td><td class="num-cell">2026-09-22</td>
+              <td class="num-cell">2082/83</td><td class="num-cell">₨ 15,000.00</td><td class="num-cell">26</td>
+              <td><span class="badge OK">Issued</span></td>
+              <td class="row-actions"><button class="icon-btn edit-date" title="Correct entry">✎</button></td>
+            </tr>
+            <tr>
+              <td class="tenant-name">LePatio</td><td class="num-cell">2026-09-10</td>
+              <td class="num-cell">2082/83</td><td class="num-cell">₨ 12,000.00</td><td class="num-cell">—</td>
+              <td><span class="badge DUE-SOON">Pending</span></td>
+              <td class="row-actions"><button class="icon-btn edit-date" title="Correct entry">✎</button></td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <!-- GRACE -->
+      <section id="grace">
+        <div class="section-head">
+          <div><h1>Grace Periods</h1><div class="subnote" style="margin-bottom:0;">Every extension, with the reason on record.</div></div>
+          <button class="btn">+ Grant Extension</button>
+        </div>
+        <div class="ledger">
+        <table>
+          <thead><tr><th>Tenant</th><th>Previous Due</th><th>New Due</th><th>Granted By</th><th>Reason</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="tenant-name">Caviar Restaurant & Bar</td><td class="num-cell">2026-09-11</td>
+              <td class="num-cell">2026-09-18</td><td>Sujal</td>
+              <td>Client requested 1-week extension due to bank transfer delay</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <!-- DOCUMENTS -->
+      <section id="documents">
+        <h1>Contract Documents</h1>
+        <div class="subnote">Scanned copies of signed contracts, filed against the tenant they belong to.</div>
+        <div class="dropzone"><strong>Drag a scanned contract here</strong>, or click to browse. PDF or image, up to 10&nbsp;MB. Filed under the selected tenant automatically.</div>
+        <div class="doc-grid">
+          <div class="doc-card">
+            <div class="doc-thumb">📄</div>
+            <div class="doc-name">contract_northfield_2025.pdf</div>
+            <div class="doc-meta">Northfield Cafe · uploaded 2025-09-01</div>
+          </div>
+          <div class="doc-card">
+            <div class="doc-thumb">📄</div>
+            <div class="doc-name">amc_renewal_lepatio.pdf</div>
+            <div class="doc-meta">LePatio · uploaded 2026-08-20</div>
+          </div>
+          <div class="doc-card">
+            <div class="doc-thumb">🖼</div>
+            <div class="doc-name">vat_bill_26_northfield.jpg</div>
+            <div class="doc-meta">Northfield Cafe · uploaded 2026-09-22</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- AUDIT -->
+      <section id="audit">
+        <h1>Correction Log</h1>
+        <div class="subnote">Every date or amount ever changed, with who changed it and why — nothing is silently overwritten.</div>
+        <div class="ledger">
+        <table>
+          <thead><tr><th>When</th><th>Tenant</th><th>Field</th><th>Previous</th><th>Corrected To</th><th>By</th><th>Reason</th></tr></thead>
+          <tbody>
+            <tr><td class="num-cell">2026-09-18 10:22</td><td>Caviar Restaurant & Bar</td><td>AMC End Date</td><td class="num-cell">2026-09-11</td><td class="num-cell">2026-09-18</td><td>Sujal</td><td>Bank transfer delay — grace granted</td></tr>
+            <tr><td class="num-cell">2026-09-20 09:03</td><td>New Urban Slice Pvt. Ltd.</td><td>Registered Date</td><td class="num-cell">(blank)</td><td class="num-cell">2023-04-11</td><td>Sujal</td><td>Back-filled from paper file</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <!-- ADMIN -->
+      <section id="admin">
+        <h1>Admin / Raw Data</h1>
+        <div class="subnote">Direct edit access for fixing bad imports or one-off typos — restricted to the Finance role. Every save here still writes to the Correction Log.</div>
+        <div class="section-head">
+          <select class="fy-select" style="min-width:220px;"><option>Table: RestroUsersInfo</option><option>Table: RestroUsersPaymentLogs</option><option>Table: GracePeriodLogs</option><option>Table: ContractDocuments</option></select>
+          <button class="btn ghost small">+ Add Row</button>
+        </div>
+        <div class="ledger">
+        <table>
+          <thead><tr><th>TenantName</th><th>TenantCode</th><th>IsActive</th><th>GracePeriodDays</th><th>PanVatNumber</th><th></th></tr></thead>
+          <tbody>
+            <tr><td contenteditable style="outline:none;">Northfield Cafe Pvt. Ltd.</td><td class="num-cell" contenteditable style="outline:none;">NORTHFIELD01</td><td class="num-cell">true</td><td class="num-cell" contenteditable style="outline:none;">7</td><td class="num-cell" contenteditable style="outline:none;">304-982-101</td><td class="row-actions"><button class="icon-btn">💾</button></td></tr>
+            <tr><td contenteditable style="outline:none;">Caviar Restaurant & Bar</td><td class="num-cell" contenteditable style="outline:none;">CAVIAR01</td><td class="num-cell">true</td><td class="num-cell" contenteditable style="outline:none;">7</td><td class="num-cell" contenteditable style="outline:none;"></td><td class="row-actions"><button class="icon-btn">💾</button></td></tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- EDIT / CORRECTION MODAL -->
+<div class="overlay" id="editOverlay">
+  <div class="modal">
+    <span class="close-x" id="closeModal">✕</span>
+    <h2>Correct AMC End Date</h2>
+    <div class="subnote">Northfield Cafe Pvt. Ltd. · a reason is required so this shows up in the Correction Log.</div>
+    <div class="row2">
+      <div><label>Current value</label><input value="2026-09-18" disabled /></div>
+      <div><label>Corrected value</label><input type="date" value="2026-09-25" /></div>
+    </div>
+    <label>Reason for correction</label>
+    <textarea rows="2" placeholder="e.g. Typed wrong year during data entry">Typo — should be 25th, not 18th</textarea>
+
+    <div class="audit">
+      <div class="audit-title">Previous corrections on this field</div>
+      <div class="audit-item"><span class="change">2025-09-18 → 2026-09-18</span> · <span class="who">Sujal, 2025-08-30 — annual renewal</span></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn ghost small" id="cancelModal">Cancel</button>
+      <button class="btn small">Save correction</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.navlink').forEach(function(link){
+    link.addEventListener('click', function(){
+      document.querySelectorAll('.navlink').forEach(function(l){ l.classList.remove('active'); });
+      this.classList.add('active');
+      document.querySelectorAll('main section').forEach(function(s){ s.classList.remove('visible'); });
+      var t = document.getElementById(this.getAttribute('data-target'));
+      if(t) t.classList.add('visible');
+    });
+  });
+  var overlay = document.getElementById('editOverlay');
+  document.querySelectorAll('.edit-date').forEach(function(btn){
+    btn.addEventListener('click', function(){ overlay.classList.add('open'); });
+  });
+  document.getElementById('closeModal').addEventListener('click', function(){ overlay.classList.remove('open'); });
+  document.getElementById('cancelModal').addEventListener('click', function(){ overlay.classList.remove('open'); });
+  overlay.addEventListener('click', function(e){ if(e.target === overlay) overlay.classList.remove('open'); });
+</script>
+</body>
+</html>
